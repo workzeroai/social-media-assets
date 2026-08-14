@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "upload_id": "20260814-threads-chatgpt-test-003-missing",
+  "target_path": "threads/2026/08/chatgpt-test-v3/image-c-missing.jpg",
+  "mime_type": "image/jpeg",
+  "expected_bytes": 20057,
+  "expected_sha256": "e4763d4a26e1365fb63eadb464eec414284f1db3eeef61cfc6b36078133c62c3",
+  "expected_width": 1080,
+  "expected_height": 1080,
+  "chunk_count": 3
+}
