@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "upload_id": "20260814-threads-chatgpt-test-001",
+  "target_path": "threads/2026/08/chatgpt-test-v3/image-b-v3.jpg",
+  "mime_type": "image/jpeg",
+  "expected_bytes": 43536,
+  "expected_sha256": "dfea4ea0cab0a500412d0c551e905c4a0f89b14c68b064897ab1ebead279c0c5",
+  "expected_width": 1080,
+  "expected_height": 1080,
+  "chunk_count": 5
+}
