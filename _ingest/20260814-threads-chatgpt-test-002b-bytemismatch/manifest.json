@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "upload_id": "20260814-threads-chatgpt-test-002b-bytemismatch",
+  "target_path": "threads/2026/08/chatgpt-test-v3/image-b2-bytemismatch.jpg",
+  "mime_type": "image/jpeg",
+  "expected_bytes": 20363,
+  "expected_sha256": "4f92b087f35506d416ee8d697a209be2f8cce3a2c990e0674fe040cd37c83ac9",
+  "expected_width": 1080,
+  "expected_height": 1080,
+  "chunk_count": 3
+}
