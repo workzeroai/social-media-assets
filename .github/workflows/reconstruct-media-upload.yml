@@ -1,0 +1,106 @@
+name: Reconstruct media upload
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "_ingest/**/manifest.json"
+  workflow_dispatch:
+    inputs:
+      manifest_path:
+        description: "Path to manifest.json under _ingest/ (optional, defaults to detecting it from the push diff)"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: reconstruct-media-upload
+  cancel-in-progress: false
+
+jobs:
+  reconstruct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Pillow
+        run: python -m pip install --upgrade pip Pillow
+
+      - name: Determine manifest paths
+        id: find
+        env:
+          MANUAL_MANIFEST: ${{ inputs.manifest_path }}
+          BEFORE_SHA: ${{ github.event.before }}
+        run: |
+          set -uo pipefail
+          : > manifests.txt
+
+          if [ -n "${MANUAL_MANIFEST:-}" ]; then
+            echo "$MANUAL_MANIFEST" > manifests.txt
+          else
+            if [ -n "${BEFORE_SHA:-}" ] && [ "$BEFORE_SHA" != "0000000000000000000000000000000000000000" ]; then
+              git diff --name-only --diff-filter=AM "$BEFORE_SHA" "${{ github.sha }}" -- '_ingest/**/manifest.json' > manifests.txt
+            fi
+            if [ ! -s manifests.txt ]; then
+              git diff --name-only --diff-filter=AM HEAD~1 HEAD -- '_ingest/**/manifest.json' > manifests.txt
+            fi
+          fi
+
+          if [ -s manifests.txt ]; then
+            echo "Manifests to process:"
+            cat manifests.txt
+            echo "proceed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "No added/modified manifest.json in this push (likely a cleanup-only commit). Skipping."
+            echo "proceed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Reconstruct, verify, and commit
+        if: steps.find.outputs.proceed == 'true'
+        run: |
+          set -uo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          FAILED=0
+
+          while IFS= read -r MANIFEST; do
+            [ -z "$MANIFEST" ] && continue
+            echo "::group::Reconstructing $MANIFEST"
+
+            if python scripts/reconstruct_media_upload.py "$MANIFEST" > reconstruct_output.txt 2> reconstruct_error.txt; then
+              cat reconstruct_output.txt
+
+              UPLOAD_ID=$(grep '^UPLOAD_ID=' reconstruct_output.txt | head -1 | cut -d= -f2-)
+              TARGET_PATH=$(grep '^TARGET_PATH=' reconstruct_output.txt | head -1 | cut -d= -f2-)
+              INGEST_DIR=$(dirname "$MANIFEST")
+
+              git add "$TARGET_PATH"
+              git rm -r --ignore-unmatch "$INGEST_DIR"
+              git commit -m "Add reconstructed media: $UPLOAD_ID"
+              git push origin HEAD:main
+
+              echo "::endgroup::"
+            else
+              EXIT_CODE=$?
+              cat reconstruct_output.txt
+              cat reconstruct_error.txt >&2
+              echo "::endgroup::"
+              echo "::error::Reconstruction failed for $MANIFEST (exit $EXIT_CODE). _ingest files preserved for debugging."
+              FAILED=1
+            fi
+          done < manifests.txt
+
+          if [ "$FAILED" -ne 0 ]; then
+            exit 1
+          fi
