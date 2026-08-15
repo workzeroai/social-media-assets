@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "upload_id": "20260815-ui-success-method-001",
+  "target_path": "threads/2026/08/chunk-action-test/ui-success-method.jpg",
+  "mime_type": "image/jpeg",
+  "expected_bytes": 14811,
+  "expected_sha256": "bff204481c833c4108e562f40d63ba59882cff298466403aa0f6a3a2481aae62",
+  "expected_width": 720,
+  "expected_height": 576,
+  "chunk_count": 2
+}
